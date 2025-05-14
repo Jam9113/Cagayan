@@ -61,7 +61,7 @@
     }
 
     .btn:hover {
-      background-color: brown;
+      background-color: #5d2a2a;
     }
 
     .signup-link {
@@ -82,9 +82,9 @@
 <body>
 
   <div class="form-container">
-    <img src="logo.jpg"" alt="Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
+    <img src="logo.jpg" alt="Logo" style="width: 100px; display: block; margin: 0 auto 20px;" />
     <h2>Login</h2>
-    <form action="admin.html" method="POST">
+    <form id="loginForm">
       <div class="form-group">
         <label for="email">Email Address</label>
         <input type="email" id="email" name="email" required placeholder="Enter your email" />
@@ -99,6 +99,36 @@
       <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
     </div>
   </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('http://localhost:3000/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+          // 🧠 Store email in localStorage
+          localStorage.setItem('userEmail', email);
+
+          // ✅ Redirect to admin dashboard
+          window.location.href = 'admin.html';
+        } else {
+          alert('❌ Login failed: Invalid email or password.');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('❌ Error connecting to the server.');
+      }
+    });
+  </script>
 
 </body>
 </html>
