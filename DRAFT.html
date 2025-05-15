@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Management System</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background-color: #f4f4f4;
+    }
+    .auth-container {
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      height: 100vh; background-color: #fff;
+    }
+    .auth-container input, .auth-container button {
+      padding: 10px; margin: 5px; width: 300px;
+    }
+    .auth-container button {
+      background-color: #0000FF; color: white; border: none; cursor: pointer;
+    }
+    .auth-container button:hover {
+      background-color: #0000CC;
+    }
+    #mainApp {
+      display: none; padding: 20px;
+    }
+    .bottom-container {
+      text-align: center; background-color: #666; border-radius: 0 0 4px 4px;
+    }
+    .form-container input, .form-container button, .form-container select {
+      padding: 10px; margin: 5px;
+    }
+    .item-row {
+      display: flex; flex-direction: row; align-items: center;
+    }
+    .item-row input {
+      margin-right: 10px;
+    }
+    .col {
+      float: left; width: 50%; margin: auto; padding: 0 50px; margin-top: 6px;
+    }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 10px; text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    .low-stock {
+      background-color: #fff3cd;
+    }
+    #logoutBtn {
+      float: right; margin: 10px;
+    }
+    .header {
+      display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center;
+    }
+    .search-container {
+      margin-top: 10px;
+    }
+    h2 {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-container" id="authContainer">
+  <img src="jkkk.png" alt="Xavier University Logo" style="width: 200px; height: auto;">
+  <h2>XU PPO Inventory Management System Login</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button id="loginBtn">Login</button>
+  <p>Don't have an account? <span id="signupLink" style="color: blue; cursor: pointer;">Sign up</span></p>
+</div>
+
+<div class="auth-container" id="signupContainer" style="display: none;">
+  <img src="jkkk.png" alt="Xavier University Logo" style="width: 200px; height: auto;">
+  <h2>XU PPO Inventory Management System Signup</h2>
+  <input type="text" id="newUsername" placeholder="Username">
+  <input type="password" id="newPassword" placeholder="Password">
+  <input type="password" id="confirmPassword" placeholder="Confirm Password">
+  <button id="signupBtn" onclick="signup()">Sign Up</button>
+  <button onclick="signInWithGoogle()">Sign in with Google</button>
+  <p>Already have an account? <span id="loginLink" style="color: blue; cursor: pointer;">Login</span></p>
+</div>
+
+<div class="bottom-container" style="display:none">
+  <div class="col">
+    <a href="#" style="color:blue" class="btn">Forget Password</a>
+  </div>
+</div>
+
+<div id="mainApp">
+  <div class="header">
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+    <img src="jkkk.png" alt="Xavier University Logo" style="width: 200px; height: auto;">
+    <h2 style="color:black; text-align: center;">Inventory Management System</h2>
+  </div>
+
+  <div class="form-container item-row">
+    <input type="text" id="itemName" placeholder="Item Name">
+    <input type="number" id="itemQuantity" placeholder="Quantity" min="1">
+    <button onclick="addItem()">Add Item</button>
+    <button onclick="exportToCSV()">Export CSV</button>
+    <button onclick="exportToPDF()">Export PDF</button>
+    <button onclick="exportToWord()">Export Word</button>
+  </div>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Search Item..." oninput="filterItems()">
+    <button onclick="filterItems()">Search</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Quantity</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="inventoryTable"></tbody>
+  </table>
+
+  <div class="form-container">
+    <h3>Budget Management</h3>
+    <input type="text" id="budgetCategory" placeholder="Category">
+    <input type="number" id="budgetAmount" placeholder="Amount">
+    <select id="budgetType">
+      <option value="expense">Expense</option>
+    </select>
+    <button onclick="addBudgetItem()">Add Budget Item</button>
+  </div>
+  <div class="form-container">
+    <h3>Maintenance & Repair Scheduling</h3>
+    <input type="text" id="maintenanceTask" placeholder="Task (e.g., Repair )">
+    <input type="date" id="maintenanceDate">
+    <select id="maintenanceStatus">
+      <option value="Scheduled">Scheduled</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Completed">Completed</option>
+      <option value="Cancelled">Cancelled</option>
+    </select>
+    <button onclick="addMaintenanceTask()">Add Task</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="maintenanceTable"></tbody>
+  </table>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyD6VZxnnMhgMJAQ721DJEF3qP0BDVlcDds",
+    authDomain: "inventory-76ea1.firebaseapp.com",
+    projectId: "inventory-76ea1",
+    storageBucket: "inventory-76ea1.firebasestorage.app",
+    messagingSenderId: "776608529205",
+    appId: "1:776608529205:web:306bbe4b5af19b64a5aa7c",
+    measurementId: "G-3HK3LMQ5WX"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  const users = JSON.parse(localStorage.getItem('users')) || [];
+
+  function signInWithGoogle() {
+    auth.signInWithPopup(provider)
+      .then(result => {
+        const user = result.user;
+        alert(` Logged in as ${user.email}`);
+        localStorage.setItem("userEmail", user.email);
+        window.location.href = "admin.html";
+      })
+      .catch(error => {
+        console.error("Login failed:", error);
+        alert(" Google login failed.");
+      });
+  }
+
+  function login() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const user = users.find(u => u.username === username && u.password === password);
+
+    if (user) {
+      document.getElementById('authContainer').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      loadItems();
+      renderMaintenanceTable();
+    } else {
+      alert('Invalid credentials!');
+    }
+  }
+
+  function signup() {
+    const username = document.getElementById('newUsername').value.trim();
+    const password = document.getElementById('newPassword').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+if (!username || !password || !confirmPassword) {
+  alert('Please fill in all fields.');
+  return;
+}
+
+if (password !== confirmPassword) {
+  alert('Passwords do not match.');
+  return;
+}
+
+if (users.find(user => user.username === username)) {
+  alert('Username already exists!');
+  return;
+}
+
+users.push({ username, password });
+localStorage.setItem('users', JSON.stringify(users));
+
+alert('Account created successfully!');
+document.getElementById('signupContainer').style.display = 'none';
+document.getElementById('authContainer').style.display = 'block';
+}
+
+function logout() {
+location.reload();
+}
+function exportToPDF() {
+    const inventory = getInventory();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Inventory Report", 20, 10);
+    const rows = inventory.map(item => [item.name, item.quantity]);
+    doc.autoTable({ head: [['Item Name', 'Quantity']], body: rows });
+    doc.save('inventory.pdf');
+  }
+  function exportToCSV() {
+    const inventory = getInventory();
+    const rows = inventory.map(item => [item.name, item.quantity]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + ['Item Name,Quantity'].join(',') + '\n' + rows.map(row => row.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'inventory.csv');
+    link.click();
+  }
+    function addItem() {
+    const itemName = document.getElementById('itemName').value.trim();
+    const itemQuantity = parseInt(document.getElementById('itemQuantity').value.trim());
+    if (!itemName || isNaN(itemQuantity) || itemQuantity <= 0) {
+      alert('Please enter a valid item name and quantity > 0.');
+      return;
+    }
+    const inventory = getInventory();
+    const duplicate = inventory.find(item => item.name.toLowerCase() === itemName.toLowerCase());
+    if (duplicate) {
+      alert('Item already exists!');
+      return;
+    }
+    inventory.push({ name: itemName, quantity: itemQuantity });
+    saveInventory(inventory);
+    renderTable();
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemQuantity').value = '';
+  }
+  
+  function addMaintenanceTask() {
+    const task = document.getElementById('maintenanceTask').value.trim();
+    const date = document.getElementById('maintenanceDate').value;
+    const status = document.getElementById('maintenanceStatus').value;
+
+    if (!task || !date) {
+      alert("Please fill in both task and date.");
+      return;
+    }
+    const maintenanceTasks = getMaintenanceTasks();
+    const duplicate = maintenanceTasks.find(item => item.task.toLowerCase() === task.toLowerCase());        
+}
+    if (duplicate) {
+      alert('Task already exists!');
+      return;
+    }
+    maintenanceTasks.push({ task, date, status });
+    saveMaintenanceTasks(maintenanceTasks);
+    renderMaintenanceTable();
+    document.getElementById('maintenanceTask').value = '';
+    document.getElementById('maintenanceDate').value = '';
+    document.getElementById('maintenanceStatus').value = 'Scheduled';
+
+  function saveInventory(data) {
+    localStorage.setItem('inventory', JSON.stringify(data));
+  }
+
+  function getInventory() {
+    return JSON.parse(localStorage.getItem('inventory')) || [];
+  }
+
+  function renderTable() {
+    const table = document.getElementById('inventoryTable');
+    table.innerHTML = '';
+    const inventory = getInventory();
+    inventory.forEach((item, index) => {
+      const row = document.createElement('tr');
+      if (item.quantity <= 5) row.classList.add('low-stock');
+      row.innerHTML = `
+        <td>${item.name}</td>
+        <td>${item.quantity}</td>
+        <td><button onclick="deleteItem(${index})">Delete</button></td>
+      `;
+      table.appendChild(row);
+    });
+  }
+
+
+document.getElementById("loginBtn").addEventListener("click", login);
+document.getElementById("signupLink").addEventListener("click", () => {
+document.getElementById('authContainer').style.display = 'none';
+document.getElementById('signupContainer').style.display = 'block';
+});
+document.getElementById("loginLink").addEventListener("click", () => {
+document.getElementById('signupContainer').style.display = 'none';
+document.getElementById('authContainer').style.display = 'block';
+});
+</script>
+
+</body> </html> 
